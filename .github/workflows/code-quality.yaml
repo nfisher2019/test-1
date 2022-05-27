@@ -1,0 +1,120 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'terraform/**'
+      - 'config.yaml'
+      - 'go.mod'
+      - 'Makefile'
+  push:
+    branches:
+      - main
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'terraform/**'
+      - 'config.yaml'
+      - 'go.mod'
+      - 'Makefile'
+
+env:
+  GO_VERSION: ^1.18
+  TERRAFORM_VERSION: 1.0.9
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: [feature/generic, size/md, env/infra-mgmt, group/default]
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install goimports
+        run: go install golang.org/x/tools/cmd/goimports@latest
+
+      - name: Run goimports
+        run: goimports -w .
+
+      - name: Run go mod tidy
+        run: find . -name go.mod -execdir go mod tidy \;
+
+      - name: Verify goimports and tidy
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo 'To fix this check, run "goimports -w . && find . -name go.mod -execdir go mod tidy \;"'
+            git diff # Show the files that failed to pass the check.
+            exit 1
+          fi
+  vet:
+    name: Vet
+    runs-on: [feature/generic, size/md, env/infra-mgmt, group/default]
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get Github token
+        id: github-token
+        uses: getsentry/action-github-app-token@v1
+        with:
+          app_id: ${{ secrets.INFRA_BOT_GITHUB_APP_ID }}
+          private_key: ${{ secrets.INFRA_BOT_GITHUB_APP_KEY }}
+
+      - name: Prepare Github auth
+        run: git config --global url."https://x-access-token:${{ steps.github-token.outputs.token }}@github.com/skillz".insteadOf "https://github.com/skillz"
+
+      - name: Run vet
+        run: |
+          ROOT_DIR=$(pwd) \
+          find . -name go.mod -execdir sh -c 'go vet ./... || touch $ROOT_DIR/vet_failed.txt' \; ; \
+          test ! -f vet_failed.txt
+
+  test:
+    name: Test
+    runs-on: [feature/generic, size/md, env/infra-mgmt, group/default]
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Get Github Token
+        id: github-token
+        uses: getsentry/action-github-app-token@v1
+        with:
+          app_id: ${{ secrets.INFRA_BOT_GITHUB_APP_ID }}
+          private_key: ${{ secrets.INFRA_BOT_GITHUB_APP_KEY }}
+
+      - name: Prepare Github auth
+        run: git config --global url."https://x-access-token:${{ steps.github-token.outputs.token }}@github.com/skillz".insteadOf "https://github.com/skillz"
+
+      - name: Install docker-compose
+        uses: KengoTODA/actions-setup-docker-compose@v1.0.4
+        with:
+          version: '1.29.2'
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Execute Tests
+        run: make test

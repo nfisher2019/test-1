@@ -1,0 +1,32 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Server Microservice Template
+servers:
+  - url: http://server-go-microtest-1.internal.{env}.cloud.skillz.com
+    variables:
+      env:
+        default: dev
+        enum:
+          - dev
+paths:
+  /hello:
+    get:
+      description: "Get a hello"
+      responses:
+        '200':
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                $ref: '#/components/schemas/Hello'
+
+components:
+  schemas:
+    Hello:
+      type: object
+      required:
+        - msg
+      properties:
+        msg:
+          type: string

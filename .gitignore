@@ -1,0 +1,31 @@
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+# Terraform
+.terraform
+
+# Emacs
+*~
+
+# generated helper code
+/.gitops-qa
+/.generator/*.jar
+/.docs
+/.openapi-generator
+
+# build output
+/server
+/out
+/gen
+/performance

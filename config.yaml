@@ -1,0 +1,53 @@
+default: &default
+  log_level: info
+  addr: ":8080"
+  aws_client_config:
+    http_client_settings:
+      connect: 1s
+      conn_keep_alive: 30s
+      expect_continue: 1s
+      idle_conn: 60s
+      max_all_idle_conns: 100
+      max_host_idle_conns: 10
+      response_header: 5s
+      tls_handshake: 5s
+
+production: &production
+  <<: *default
+  enable_datadog_tracer: true
+  hide_startup_banner: true
+  aws_client_config:
+    region: us-east-1
+
+production-sandbox:
+  <<: *production
+
+staging: &staging
+  <<: *default
+  enable_datadog_tracer: true
+  hide_startup_banner: true
+  aws_client_config:
+    region: us-east-1
+
+staging-sandbox:
+  <<: *staging
+
+qa: &qa
+  <<: *default
+  log_level: debug
+  enable_datadog_tracer: true
+  hide_startup_banner: false
+  aws_client_config:
+    region: us-west-2
+
+qa-sandbox:
+  <<: *qa
+
+dev:
+  <<: *default
+  log_level: debug
+  enable_datadog_tracer: false
+  hide_startup_banner: false
+  aws_client_config:
+    region: us-west-2
+    endpoint: http://dev-localstack:8000

@@ -1,0 +1,28 @@
+---
+repositories:
+- name: skillz
+  url: s3://skillz-charts
+
+environments:
+  default:
+    values:
+      - ../globals.yaml
+    secrets:
+      - ../secrets.yaml
+releases:
+  - name: server-go-microtest-1
+    version: 0.6.1
+    chart: skillz/deployment
+    values:
+      - ./release.yaml
+      {{- if eq (env "PROFILE") "dev" }}
+      - ./dev-values.yaml.gotmpl
+      {{- else }}
+      - ./values.yaml.gotmpl
+      {{- end}}
+  {{- if eq (env "NAMESPACE") "test-1" }}
+  - name: istio
+    chart: skillz/raw
+    values:
+      - ./istio-values.yaml
+  {{- end }}

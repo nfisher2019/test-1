@@ -1,0 +1,27 @@
+name: Docker Image Build
+
+on:
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+    inputs:
+      label:
+        description: 'Docker Label'
+        required: false
+        default: ''
+
+jobs:
+  build_docker_image:
+    uses: skillz/infra-reusable-workflows/.github/workflows/reusable-build-docker-image.yaml@build-docker-image-v0.1
+    with:
+      pass_github_token: true
+      pass_artifactory_creds: true
+    secrets:
+      INFRA_BOT_GITHUB_APP_ID: ${{ secrets.INFRA_BOT_GITHUB_APP_ID }}
+      INFRA_BOT_GITHUB_APP_KEY: ${{ secrets.INFRA_BOT_GITHUB_APP_KEY }}
+      ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+      ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}

@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: test-1-api
+  description: API definition for Cloud Gaming Test 1 Service
+spec:
+  type: openapi
+  lifecycle: experimental
+  owner: "group:infra-support"
+  definition:
+    $text: https://github.com/skillz/test-1/blob/main/api/openapi.yaml

@@ -1,0 +1,7 @@
+creation_rules:
+- path_regex: ./deploy/environments/dev/.*secrets.yaml
+  kms: 'arn:aws:kms:us-west-2:779979510006:alias/cloud-gaming-dev-gitops-admin'
+- path_regex: ./deploy/environments/demo/.*secrets.yaml
+  kms: 'arn:aws:kms:us-west-2:779979510006:alias/cloud-gaming-dev-gitops-admin'
+- path_regex: ./deploy/environments/prod/.*secrets.yaml
+  kms: 'arn:aws:kms:us-west-2:574698392372:alias/cloud-gaming-prod-gitops-admin'

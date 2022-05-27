@@ -1,0 +1,31 @@
+name: autoupdate
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  autoupdate:
+    name: autoupdate
+    runs-on: [feature/generic, size/nano, env/infra-mgmt, group/default]
+    steps:
+      - name: Get Github Token
+        id: github-token
+        uses: getsentry/action-github-app-token@v1
+        with:
+          app_id: ${{ secrets.INFRA_BOT_GITHUB_APP_ID }}
+          private_key: ${{ secrets.INFRA_BOT_GITHUB_APP_KEY }}
+
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.0
+        with:
+          access_token: ${{ steps.github-token.outputs.token }}
+
+      - uses: docker://chinthakagodawita/autoupdate-action:v1
+        env:
+          GITHUB_TOKEN: "${{ steps.github-token.outputs.token }}"
+          MERGE_MSG: "Branch was auto-updated."
+          RETRY_COUNT: "5"
+          RETRY_SLEEP: "300"
+          MERGE_CONFLICT_ACTION: "ignore"

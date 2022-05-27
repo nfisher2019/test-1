@@ -1,0 +1,9 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: test-1-backstage
+  description: Reference to all Backstage resources for Cloud Gaming Test 1 Service
+spec:
+  targets:
+    - ./catalog-info.yaml
+    - ./api-info.yaml

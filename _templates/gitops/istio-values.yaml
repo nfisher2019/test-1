@@ -1,0 +1,13 @@
+resources:
+  - apiVersion: networking.istio.io/v1beta1
+    kind: VirtualService
+    metadata:
+      name: test-1-internal
+    spec:
+      hosts:
+        - test-1.internal.dev.cloud.skillz.com
+        - test-1.qa.skillz.com
+        - test-1.test-1.svc.cluster.local
+      gateways:
+        - mesh
+        - istio-system/internal

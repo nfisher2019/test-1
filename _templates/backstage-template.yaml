@@ -1,0 +1,341 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: server-go-microtest-1
+  title: New Golang Service (Server)
+  description: Create a Golang service with all the required dependencies
+  tags:
+    - recommended
+    - golang
+spec:
+  owner: server
+  type: service
+
+  parameters:
+    - title: Please Read Before You Start
+      description: |
+        This template will create a repository based on [server-go-microtest-1](https://github.com/skillz/server-go-microtest-1) which has the following features:
+
+        - Base source code for a hello world Go service
+        - CI for testing
+        - CI/CD Github workflows to build and deploy to Kubernetes in QA and staging
+        - Register the component and its dependencies in Backstage
+        - AWS IAM role for the service
+        - Open PRs for production
+
+        Optionally you can choose to set up Terraform if you need to create AWS resources for your service. It will add:
+        - Atlantis webhook to the repository
+        - Atlantis configuration file
+        - Terraform skeleton
+
+        ```
+        .
+        ├── atlantis.yaml
+        └── terraform
+            └── environments
+                ├── dev
+                │   ├── aws.tf
+                │   └── main.tf
+                ├── staging
+                │   ├── aws.tf
+                │   └── main.tf
+                │   └── variables.tf
+                └── prod
+                    ├── aws.tf
+                    └── main.tf
+        ```
+
+        **Note:** Service repository will not be created via [.github](https://github.com/skillz/.github) repo but a pull request will be created that allows managing other configuration of the repository.
+
+    - title: Repository Configuration
+      required:
+        - name
+        - description
+        - defaultBranch
+        - adminGroup
+      properties:
+        name:
+          title: Repository Name
+          description: The name of the repository
+          type: string
+          maxLength: 63
+        github_secret:
+          title:  Github Secret
+          description: Github Secret for debugging only
+          type: string
+        description:
+          title: Repository Description
+          description: The description of the service
+          type: string
+        visibility:
+          title: Repository Visibility
+          description: Internal visibility will give everyone at Skillz read access to the repository.
+          type: string
+          default: internal
+          enum:
+            - private
+            - internal
+        defaultBranch:
+          title: Default Branch
+          description: The default branch to create the service in
+          type: string
+          default: main
+          ui:disabled: true
+        adminGroup:
+          title: Admin Team
+          description: Github team that will be given admin access to the repository
+          type: string
+          ui:field: OwnerPicker
+        collaborators:
+          title: Collaborators
+          description: Github teams to add as collaborators to the repository
+          type: array
+          items:
+            type: object
+            properties:
+              username:
+                type: string
+                title: Github Team
+                description: The github team that will be given access to the repository
+                ui:field: OwnerPicker
+              access:
+                type: string
+                title: Access
+                description: The access level to give the team
+                enum:
+                  - push
+                  - pull
+                  - admin
+                  - maintain
+                  - triage
+                default: push
+          default:
+            - username: devops
+              access: admin
+        topics:
+          titile: Repository Topics
+          description: The topics that the repository will be tagged with
+          type: array
+          items:
+            type: string
+          default:
+            - server
+
+    - title: Terraform Configuration
+      description: |
+        Additional information is needed if your service requires Terraform. A few references are provided below:
+        - See [Governance at Skillz](https://backstage.skillz.com/docs/default/component/governance-at-skillz/#governance-at-skillz) for more information about Domain Name.
+        - Atlantis [configuration](https://www.runatlantis.io/docs/repo-level-atlantis-yaml.html#reference) reference.
+      properties:
+        enableTerraform:
+          title: This service requires Terraform configuration
+          type: boolean
+          default: true
+        terraformVersion:
+          title: Terraform Version
+          description: Always pick the latest version.
+          ui:field: GithubVersionPicker
+          ui:options:
+            owner: hashicorp
+            repo: terraform
+            pattern: 'v?([0-9]+\.[0-9]+\.[0-9]+)$'
+            matchGroup: 1
+        domainName:
+          title: Domain Name
+          description: The domain name used for `governance.skillz.com/domain` tag
+          type: string
+          pattern: ^[a-zA-Z0-9-]+$
+        automerge:
+          title: Set Atlantis to automatically merge pull requests after `atlantis apply`
+          type: boolean
+          default: false
+        applyRequirements:
+          title: Atlantis Terraform Apply Requirements
+          description: Requirement that must be satisfied before a pull request can be applied
+          type: array
+          ui:widget: checkboxes
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+              - mergeable
+              - approved
+
+  steps:
+    - name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ../
+        copyWithoutRender:
+          - .github/workflows/*
+        values:
+          serviceName: 
+          serviceDescription: 
+          serviceOwner: 
+          defaultBranch: 
+          terraformVersion: 
+          domainName: 
+          automerge: 
+          applyRequirements: 
+
+    - name: Move Backstage Configs
+      action: skillz:container:run
+      input:
+        command: /bin/sh
+        args:
+          - "-c"
+          - "mv _templates/backstage/* ./"
+
+    - name: Set Terraform Configs
+      if: 
+      action: skillz:container:run
+      input:
+        command: /bin/sh
+        args:
+          - "-c"
+          - "mv _templates/iac/* ./"
+
+    - name: Set Service/Repository Name
+      action: skillz:container:run
+      input:
+        command: /bin/sh
+        args:
+          - "-c"
+          - 'find . -type f -exec sed -i "s/server-go-microtest-1//g" {} +'
+
+    - name: Replace Service Template
+      action: skillz:container:run
+      input:
+        command: /bin/sh
+        envs:
+          SERVICE_NAME: 
+        args:
+          - "-c"
+          - 'find . -type f -exec sed -i "s/test-1/$SERVICE_NAME/g" {} +'
+
+#    - name: Clean up
+#      action: fs:delete
+#      input:
+#        files:
+#          - ./_templates
+
+    # - id: bot_token
+    #   name: Get skillz-infra-bot Token
+    #   action: skillz:get-secret
+    #   input:
+    #     id: skillz-infra-bot-token
+
+    - name: Create Microservice Repository
+      id: publish
+      action: publish:github
+      input:
+        repoUrl: github.com?repo=&owner=nfisher2019
+        description: 
+        # requireCodeOwnerReviews: true
+        repoVisibility: 
+        defaultBranch: 
+        access: nfisher2019
+        token: 
+        collaborators: 
+        deleteBranchOnMerge: true
+        allowMergeCommit: false
+        allowSquashMerge: true
+        allowRebaseMerge: false
+
+    # - name: Wait for Repo
+    #   action: skillz:container:run
+    #   input:
+    #     user: root
+    #     command: "/bin/sh"
+    #     args:
+    #       - "-c"
+    #       - "sleep 5"
+
+    # - id: register
+    #   name: Register With Backstage
+    #   action: catalog:register
+    #   input:
+    #     repoContentsUrl: 
+    #     catalogInfoPath: "/backstage.yaml"
+
+    # - name: Clean Up Before Gitops PR
+    #   action: fs:delete
+    #   input:
+    #     files:
+    #       - ./
+
+    # - name: Add Service To Gitops
+    #   action: fetch:template
+    #   input:
+    #     url: ./gitops/
+    #     targetPath: services//dev/
+    #     values:
+    #       serviceName: 
+
+    # - id: create_pr
+    #   name: Create Gitops PR
+    #   action: publish:github:pull-request
+    #   input:
+    #     repoUrl: github.com?repo=cg-gitops&owner=skillz
+    #     title: "[Automated PR] add  Service"
+    #     description: "This pull request was automatically generated by the Backstage scaffolder"
+    #     branchName: backstage-add-service-
+    #     token: 
+
+    # - id: merge_pr
+    #   name: Automerge Gitops PR
+    #   action: github:issues:label
+    #   input:
+    #     repoUrl: github.com?repo=cg-gitops&owner=skillz
+    #     number: 
+    #     token: 
+    #     labels:
+    #       - 'auto-merge'
+
+    # - name: Clean Up Before .github PR
+    #   action: fs:delete
+    #   input:
+    #     files:
+    #       - ./
+
+    # - name: Add Repository To .github
+    #   action: fetch:template
+    #   input:
+    #     url: ./.github/
+    #     targetPath: repositories/platform/cloud-gaming/
+    #     values:
+    #       name: 
+    #       description: 
+    #       defaultBranch: 
+    #       labelSet: cloud-gaming
+    #       enableTerraform: 
+
+    # - id: create_pr_github
+    #   name: Create .github PR
+    #   action: publish:github:pull-request
+    #   input:
+    #     repoUrl: github.com?repo=.github&owner=skillz
+    #     title: "[Automated PR] add repository for "
+    #     description: "This pull request was automatically generated by the Backstage scaffolder"
+    #     branchName: backstage-add-service-
+    #     token: 
+
+  output:
+    links:
+      # - title: Service Repository
+      #   url: 
+      #   icon: github
+      - title: Track Initial Deployment
+        url: https://github.com/skillz//actions
+        icon: github
+      # - title: Gitops PR
+      #   url: 
+      #   icon: github
+      # - title: .github PR (manually merge)
+      #   url: 
+      #   icon: github
+      # - title: Service Endpoint (available after deployment)
+      #   url: https://.internal.dev.cloud-gaming.skillz.com/v1/hello
+      # - title: Open in Backstage catalog
+      #   icon: catalog
+      #   entityRef: 

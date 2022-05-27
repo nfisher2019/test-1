@@ -1,0 +1,19 @@
+# reference: https://www.runatlantis.io/docs/repo-level-atlantis-yaml.html#reference
+version: 3
+automerge: false
+projects:
+  - name: dev
+    dir: terraform/environments/dev
+    apply_requirements: 
+    autoplan:
+      when_modified: ["*.tf*"]
+  - name: demo
+    dir: terraform/environments/demo
+    apply_requirements: 
+    autoplan:
+      when_modified: ["*.tf*"]
+  - name: prod
+    dir: terraform/environments/prod
+    apply_requirements: 
+    autoplan:
+      when_modified: ["*.tf*"]

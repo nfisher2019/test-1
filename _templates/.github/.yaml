@@ -1,0 +1,21 @@
+name: 
+description: 
+create: false # Repository is created by Backstage
+
+default_branch: main
+label_set: 
+
+access:
+  teams:
+    - name: devops
+      permission: admin
+    - name: cloud-gaming
+      permission: admin
+    - name: cloud-gaming-RO
+      permission: pull
+
+branch_protections:
+  - branch: main
+    required_pull_request_reviews:
+      require_code_owner_reviews: true
+      required_approving_review_count: 1

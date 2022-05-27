@@ -1,0 +1,22 @@
+app:
+  name: test-1
+  env: dev
+  notify:
+    group: app-test-1
+httpPort: 8080
+imageRepository: {{ .Environment.Values.dockerRegistry }}/test-1
+fullnameOverride: test-1
+livenessProbeUrl: /livez
+readinessProbeUrl: /readyz
+env:
+  - name: PROFILE
+    value: dev
+
+nodeSelector:
+  dedicated: cloud-dev-env
+
+tolerations:
+  - key: dedicated
+    operator: Equal
+    value: cloud-dev-env
+    effect: NoSchedule

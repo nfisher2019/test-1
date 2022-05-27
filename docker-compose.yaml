@@ -1,0 +1,5 @@
+version: "3.7"
+services:
+  cowsay:
+    image: rancher/cowsay
+    command: "I am a horse‽"

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+GENERATOR_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+GENERATOR_JAR=${GENERATOR_DIR}/skillz-openapi-generator-cli.jar
+
+if [ -f "${GENERATOR_JAR}" ] && [ $(find "${GENERATOR_JAR}" -ctime +1d) ]
+then
+  echo "Removing cached generator"
+  rm "${GENERATOR_JAR}"
+fi
+
+if [ ! -f "${GENERATOR_JAR}" ]
+then
+  mvn --settings "${GENERATOR_DIR}/settings.xml" \
+      --batch-mode \
+      --update-snapshots \
+      org.apache.maven.plugins:maven-dependency-plugin:2.9:get \
+      -Dartifact=com.skillz:skillz-openapi-generator-cli:5.3.3-SNAPSHOT \
+      -Dtransitive=false \
+      -Ddest="${GENERATOR_JAR}"
+fi
+
+java -ea                          \
+  ${JAVA_OPTS}                    \
+  -Xms512M                        \
+  -Xmx1024M                       \
+  -server                         \
+  -jar "${GENERATOR_JAR}" "$@"
